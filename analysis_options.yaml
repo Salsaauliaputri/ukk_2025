@@ -10,6 +10,8 @@
 analyzer:
   errors:
     sort_child_properties_last: ignore
+    library_private_types_in_public_api: ignore ignore ignore
+    prefer_typing_uninitialized_variables: ignore ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

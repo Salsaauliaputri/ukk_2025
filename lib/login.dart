@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'home.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -15,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _isLoading = false;
   bool _isPasswordVisible = false; // Untuk mengatur visibilitas password
+
 
   Future<void> _login() async {
     setState(() {
@@ -33,7 +35,8 @@ class _LoginPageState extends State<LoginPage> {
    
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
+        MaterialPageRoute(builder: (context) => const HomePage())
+
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,14 +102,14 @@ class _LoginPageState extends State<LoginPage> {
                       'Silahkan Login Terlebih Dahulu!',
                       style: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFFB0B0B0)), 
+                          color: Color.fromARGB(255, 255, 255, 255)), 
                     ),
                     const SizedBox(height: 30),
                     TextField(
                       controller: _usernameController,
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person),
-                        hintText: 'Your Username',
+                        hintText: ' Username',
                         filled: true,
                         fillColor: const Color(0xFFF0F0F0),
                         border: OutlineInputBorder(
@@ -134,7 +137,7 @@ class _LoginPageState extends State<LoginPage> {
                             _isPasswordVisible
                                 ? Icons.visibility
                                 : Icons.visibility_off,
-                            color: const Color(0xFF9E9E9E), 
+                            color: const Color.fromARGB(255, 202, 164, 164), 
                           ),
                           onPressed: () {
                             setState(() {
@@ -160,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
                                 'Login',
-                                style: TextStyle(fontSize: 18, color: Colors.white),
+                                style: TextStyle(fontSize: 18, color: Colors.white,)
                               ),
                       ),
                     ),
