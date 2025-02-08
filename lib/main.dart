@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_2025/login.dart';
+import 'package:ukk_2025/home.dart';
+import 'produk.dart';
+
 
 Future<void> main() async {
   await Supabase.initialize(
@@ -11,7 +14,6 @@ Future<void> main() async {
   runApp(MyApp());
 }
         
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -24,6 +26,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: LoginPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
