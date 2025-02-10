@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login.dart';
+import 'pelanggan.dart';
 
 class ProdukPage extends StatefulWidget {
   final String title;
 
-  const ProdukPage({Key? key, required this.title}) : super(key: key);
+  const ProdukPage(String s, {Key? key, required this.title}) : super(key: key);
 
   @override
   _ProdukPageState createState() => _ProdukPageState();
@@ -33,39 +34,79 @@ class _ProdukPageState extends State<ProdukPage> {
 
   // Fungsi untuk mengambil data produk dari Supabase
   Future<void> _fetchProduk() async {
-    try {
-      print("Fetching produk...");
-      final response = await supabase.from('produk').select();
-      print("Data produk dari Supabase: $response");
+  try {
+    print("Fetching produk...");
+    final response = await supabase.from('produk').select();
 
-      setState(() {
-        produkList = response;
-      });
-    } catch (e) {
-      print("Error mengambil data produk: $e");
-    }
+    // Hapus duplikat dengan `toSet().toList()`
+    final uniqueProduk = response.toSet().toList();
+
+    print("Data produk dari Supabase: $uniqueProduk");
+
+    setState(() {
+      produkList = uniqueProduk;
+    });
+  } catch (e) {
+    print("Error mengambil data produk: $e");
   }
+}
+
 
   // Fungsi untuk menambah produk ke database
-  Future<void> _tambahProduk(String nama, double harga, int stok) async {
-    try {
-      final response = await supabase.from('produk').insert({
-        'nama_produk': nama,
-        'harga': harga,
-        'stok': stok, 
-      }).select();
+ Future<void> _tambahProduk(String nama, double harga, int stok) async {
+  try {
+    // Cek apakah produk sudah ada di database
+    final existingProduk = await supabase
+        .from('produk')
+        .select()
+        .eq('nama_produk', nama)
+        .maybeSingle();
 
-      print("Produk ditambahkan: $response");
+    if (existingProduk != null) {
+      // Tampilkan pesan bahwa produk sudah terdaftar
+      _showAlert("Produk sudah terdaftar", "Produk dengan nama '$nama' sudah ada dalam daftar.");
 
-      if (response.isNotEmpty) {
-        setState(() {
-          produkList.add(response.first);
-        });
-      }
-    } catch (e) {
-      print("Error menambahkan produk: $e");
+      print("Produk sudah ada, stok tidak diperbarui di UI!");
+
+      // Hanya perbarui tampilan UI tanpa menambahkan produk duplikat
+      _fetchProduk();
+      return;
     }
+
+    // Jika produk belum ada, tambahkan baru
+    final response = await supabase.from('produk').insert({
+      'nama_produk': nama,
+      'harga': harga,
+      'stok': stok,
+    }).select();
+
+    print("Produk ditambahkan: $response");
+
+    if (response.isNotEmpty) {
+      setState(() {
+        produkList.add(response.first);
+      });
+    }
+  } catch (e) {
+    print("Error menambahkan produk: $e");
   }
+}
+
+void _showAlert(String title, String message) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
 
   // Fungsi untuk mengedit produk
   Future<void> _editProduk(int id, String nama, double harga, int stok) async {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_2025/pelanggan.dart';
+import 'package:ukk_2025/user.dart';
 import 'login.dart';
 import 'produk.dart';
 
@@ -17,8 +19,13 @@ class _HomePageState extends State<HomePage> {
 
   // List halaman yang akan ditampilkan berdasarkan index BottomNavigationBar
   final List<Widget> _pages = [
-    const ProdukPage(title: ''),
-// Halaman Produk
+    const UserPage(title: 'User'),
+    const ProdukPage("Produk", title: 'Produk'),
+    const PelangganPage("Pelanggan", title: 'Pelanggan'),
+
+    
+    Center(child: Text("User")),       // Halaman User
+    Center(child: Text("Produk")),     //Halaman Produk
     Center(child: Text("Pelanggan")), // Halaman Pelanggan (Placeholder)
     Center(child: Text("Transaksi")), // Halaman Transaksi (Placeholder)
     Center(child: Text("Riwayat")),   // Halaman Riwayat (Placeholder)
@@ -55,11 +62,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
-                          (route) => false,
-                        );
+                       Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProdukPage("Produk", title: 'Produk')),
+                       );
                       },
                       child: const Text('Ya'),
                     ),
@@ -78,6 +84,7 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.red,
         unselectedItemColor: Colors.red.shade200,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'User'),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Produk'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Pelanggan'),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Transaksi'),

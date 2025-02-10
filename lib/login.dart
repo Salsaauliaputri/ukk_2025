@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home.dart';
-import 'produk.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -48,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
     // Menavigasi ke HomePage
    Navigator.pushReplacement(
   context,
-  MaterialPageRoute(builder: (context) => const HomePage (title: "Produk")),
+  MaterialPageRoute(builder: (context) => const HomePage (title: "User")),
 );
 
   } else {
