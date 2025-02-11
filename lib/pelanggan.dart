@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'transaksi.dart';
 
 class PelangganPage extends StatefulWidget {
   final String title;
@@ -45,20 +46,59 @@ class _PelangganPageState extends State<PelangganPage> {
     }
   }
 
-  // Fungsi untuk menambah pelanggan ke database
-  Future<void> _tambahPelanggan(String nama, String alamat, String nomor_telepon) async {
-    try {
-      await supabase.from('pelanggan').insert({
-        'nama_pelanggan': nama,
-        'alamat': alamat,
-        'nomor_telepon': nomor_telepon,
-      });
+ Future<void> _tambahPelanggan(String nama, String alamat, String nomor_telepon) async {
+  try {
+    // Cek apakah pelanggan sudah ada di database
+    final existingPelanggan = await supabase
+        .from('pelanggan')
+        .select()
+        .eq('nama_pelanggan', nama)
+        .maybeSingle();  // maybeSingle() untuk mendapatkan data jika ada
 
-      _fetchPelanggan(); // Memperbarui daftar pelanggan
-    } catch (e) {
-      print("Error menambahkan pelanggan: $e");
+    if (existingPelanggan != null) {
+      // Tampilkan pesan bahwa pelanggan sudah terdaftar
+      _showAlert("Pelanggan sudah terdaftar", "Pelanggan dengan nama '$nama,$nomor_telepon' sudah ada dalam daftar.");
+      print("Pelanggan sudah ada, stok tidak diperbarui di UI!");
+
+      // Jangan lanjutkan proses penambahan pelanggan
+      return;
     }
+
+    // Jika pelanggan belum ada, tambahkan baru
+    final response = await supabase.from('pelanggan').insert({
+      'nama_pelanggan': nama,
+      'alamat': alamat,
+      'nomor_telepon': nomor_telepon,
+    }).select();
+
+    print("Pelanggan ditambahkan: $response");
+
+    if (response.isNotEmpty) {
+      setState(() {
+        pelangganList.add(response.first);
+      });
+    }
+  } catch (e) {
+    print("Error menambahkan pelanggan: $e");
   }
+}
+
+void _showAlert(String title, String message) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context), // Menutup dialog
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+
 
   // Fungsi untuk mengedit pelanggan
   Future<void> _editPelanggan(int id, String nama, String alamat, String nomor_telepon) async {
@@ -87,47 +127,52 @@ class _PelangganPageState extends State<PelangganPage> {
 
   // Dialog untuk menambah pelanggan
   void _showDialogTambah() {
-    String namaPelanggan = "";
-    String alamat = "";
-    String nomor_telepon = "";
+  String namaPelanggan = "";
+  String alamat = "";
+  String nomor_telepon = "";
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tambah Pelanggan'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(labelText: 'Nama Pelanggan'),
-              onChanged: (value) => namaPelanggan = value,
-            ),
-            TextField(
-              decoration: const InputDecoration(labelText: 'Alamat'),
-              onChanged: (value) => alamat = value,
-            ),
-            TextField(
-              decoration: const InputDecoration(labelText: 'Nomor Telepon'),
-              keyboardType: TextInputType.phone,
-              onChanged: (value) => nomor_telepon = value,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
-          TextButton(
-            onPressed: () {
-              if (namaPelanggan.isNotEmpty && alamat.isNotEmpty && nomor_telepon.isNotEmpty) {
-                _tambahPelanggan(namaPelanggan, alamat, nomor_telepon);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Simpan'),
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Tambah Pelanggan'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            decoration: const InputDecoration(labelText: 'Nama Pelanggan'),
+            onChanged: (value) => namaPelanggan = value,
+          ),
+          TextField(
+            decoration: const InputDecoration(labelText: 'Alamat'),
+            onChanged: (value) => alamat = value,
+          ),
+          TextField(
+            decoration: const InputDecoration(labelText: 'Nomor Telepon'),
+            keyboardType: TextInputType.phone,
+            onChanged: (value) => nomor_telepon = value,
           ),
         ],
       ),
-    );
-  }
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+        TextButton(
+          onPressed: () {
+            if (namaPelanggan.isNotEmpty && alamat.isNotEmpty && nomor_telepon.isNotEmpty) {
+              // Jika data valid, panggil fungsi untuk menambah pelanggan
+              _tambahPelanggan(namaPelanggan, alamat, nomor_telepon);
+              Navigator.pop(context); // Menutup dialog setelah proses selesai
+            } else {
+              // Jika data tidak valid, tampilkan peringatan atau tetap di dalam dialog
+              _showAlert("Data Tidak Lengkap", "Harap isi semua data dengan benar.");
+            }
+          },
+          child: const Text('Simpan'),
+        ),
+      ],
+    ),
+  );
+}
+
 
   // Dialog untuk mengedit pelanggan
   void _showDialogEdit(int id, String nama, String alamat, String nomor_telepon) {
@@ -200,7 +245,7 @@ class _PelangganPageState extends State<PelangganPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(),
       body: ListView.builder(
         itemCount: pelangganList.length,
         itemBuilder: (context, index) {

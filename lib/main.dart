@@ -1,9 +1,12 @@
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_2025/pelanggan.dart';
+import 'package:ukk_2025/transaksi.dart';
 import 'package:ukk_2025/login.dart';
 import 'package:ukk_2025/home.dart';
 import 'package:ukk_2025/produk.dart';
+
+
 
 Future<void> main() async {
   await Supabase.initialize(
@@ -13,27 +16,35 @@ Future<void> main() async {
   runApp(MyApp());
 }
         
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'LOGIN',
+      title: 'Aplikasi',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 181, 141, 141)),
         useMaterial3: true,
       ),
-      home: LoginPage(),
+      home: LoginPage("login", title: 'Login'), // Pastikan LoginPage ditampilkan pertama kali
       debugShowCheckedModeBanner: false,
     );
   }
 }
-@override
+
+// Halaman Produk (Contoh)
+class HomePage extends StatelessWidget {
+  final String title;
+  const HomePage(String s, {super.key, required this.title});
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Produk")),
+      appBar: AppBar(
+        title: Text(getPageTitle(title)), // ✅ Menggunakan title yang benar
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -43,11 +54,11 @@ class MyApp extends StatelessWidget {
               child: Text("Menu", style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
-              title: const Text("Login"),
+              title: const Text("Home"),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  MaterialPageRoute(builder: (context) => HomePage("home", title: 'Home')),
                 );
               },
             ),
@@ -56,14 +67,48 @@ class MyApp extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ProdukPage("Produk", title: 'Produk')),
+                  MaterialPageRoute(builder: (context) => const ProdukPage("produk", title: "Produk")),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text("Pelanggan"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => PelangganPage("pelanggan", title: 'Pelanggan')),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text("Transaksi"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TransaksiPage("transaksi", title: 'Transaksi')),
                 );
               },
             ),
           ],
         ),
       ),
+      body: const Center(child: Text("Produk")),
     );
   }
+
+  // Fungsi untuk menentukan judul berdasarkan halaman
+  String getPageTitle(String key) {
+    switch (key) {
+      case "produk":
+        return "Menu Produk";
+      case "pelanggan":
+        return "Daftar Pelanggan";
+      case "transaksi":
+        return "Transaksi Penjualan";
+      default:
+        return "Aplikasi";
+    }
+  }
+}
 
 

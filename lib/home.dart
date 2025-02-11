@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_2025/pelanggan.dart';
-import 'package:ukk_2025/user.dart';
+import 'package:ukk_2025/transaksi.dart';
 import 'login.dart';
 import 'produk.dart';
 
 class HomePage extends StatefulWidget {
- final String title; 
-
-  const HomePage({Key? key, required this.title}) : super(key: key);
+  const HomePage(String s, {Key? key, required String title}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -19,16 +16,18 @@ class _HomePageState extends State<HomePage> {
 
   // List halaman yang akan ditampilkan berdasarkan index BottomNavigationBar
   final List<Widget> _pages = [
-    const UserPage(title: 'User'),
     const ProdukPage("Produk", title: 'Produk'),
     const PelangganPage("Pelanggan", title: 'Pelanggan'),
+    const TransaksiPage("Transaksi", title: 'Transaksi'),
+    Center(child: Text("Riwayat")), // Halaman Riwayat (Placeholder)
+  ];
 
-    
-    Center(child: Text("User")),       // Halaman User
-    Center(child: Text("Produk")),     //Halaman Produk
-    Center(child: Text("Pelanggan")), // Halaman Pelanggan (Placeholder)
-    Center(child: Text("Transaksi")), // Halaman Transaksi (Placeholder)
-    Center(child: Text("Riwayat")),   // Halaman Riwayat (Placeholder)
+  // List judul untuk setiap halaman
+  final List<String> _pageTitles = [
+    "Produk",
+    "Pelanggan",
+    "Transaksi",
+    "Riwayat"
   ];
 
   void _onItemTapped(int index) {
@@ -43,7 +42,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 224, 149, 149),
         title: Text(
-          widget.title,
+          _pageTitles[_selectedIndex], // Menggunakan title sesuai halaman
           style: const TextStyle(color: Colors.black),
         ),
         actions: [
@@ -62,10 +61,12 @@ class _HomePageState extends State<HomePage> {
                     ),
                     TextButton(
                       onPressed: () {
-                       Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProdukPage("Produk", title: 'Produk')),
-                       );
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  LoginPage("login", title: "Login")),
+                        );
                       },
                       child: const Text('Ya'),
                     ),
@@ -84,7 +85,6 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.red,
         unselectedItemColor: Colors.red.shade200,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'User'),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Produk'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Pelanggan'),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Transaksi'),

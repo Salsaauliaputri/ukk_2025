@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home.dart';
 
-
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage(String s, {Key? key, required String title}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -13,20 +12,30 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+ 
   final SupabaseClient _supabaseClient = Supabase.instance.client;
 
   bool _isLoading = false;
   bool _isPasswordVisible = false;
-  String _usernameError = '';
-  String _passwordError = '';
+  bool _errorShown = false; // Cek apakah error sudah muncul sebelumnya
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   Future<void> _login() async {
     setState(() {
-      _usernameError = _usernameController.text.isEmpty ? 'Username kosong' : '';
-      _passwordError = _passwordController.text.isEmpty ? 'Password kosong' : '';
+      _errorShown = false; // Reset error setiap kali login ditekan
     });
 
-    if (_usernameError.isNotEmpty || _passwordError.isNotEmpty) {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      _showSnackBar('Username dan Password tidak boleh kosong');
       return;
     }
 
@@ -34,39 +43,42 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-  try {
-  final response = await _supabaseClient
-      .from('user')
-      .select()
-      .eq('username', _usernameController.text.trim())
-      .eq('password', _passwordController.text.trim())
-      .single();
-  
-  print("Response: $response");
+    try {
+      final response = await _supabaseClient
+          .from('user')
+          .select()
+          .eq('username', _usernameController.text.trim())
+          .eq('password', _passwordController.text.trim())
+          .single();
 
-  if (response != null && response.isNotEmpty) {
-    // Menavigasi ke HomePage
-   Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(builder: (context) => const HomePage (title: "User")),
-);
-
-  } else {
-    setState(() { //jika login gagal maka akan muncul perintah di bawah ini
-      _usernameError = 'Username atau Password Salah';
-      _passwordError = 'Username atau Password Salah';
-    });
-  }
-} catch (e) { //memunculkan kesalahan yang terjadi pada saat login
-  setState(() {
-    _usernameError = 'Terjadi kesalahan saat login';
-    _passwordError = 'Terjadi kesalahan saat login';
-  });
-  ScaffoldMessenger.of(context).showSnackBar( //untuk menampilkan eror agar dapat terlihat oleh pengguna
-    SnackBar(content: Text('Error: ${e.toString()}')),
-  );
-    }
+      if (response != null && response.isNotEmpty) {
+        _errorShown = false; // Reset jika login berhasil
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const HomePage("home", title: "Home")),
+        );
+      } else {
+        if (!_errorShown) {
+          _showSnackBar('Username atau Password Salah');
+          setState(() {
+            _errorShown = true;
+          });
+        }
       }
+    } catch (e) {
+      if (!_errorShown) {
+        _showSnackBar('Username atau Password Salah');
+        setState(() {
+          _errorShown = true;
+        });
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,12 +88,9 @@ class _LoginPageState extends State<LoginPage> {
           // Background Gradient
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 81, 16, 16),
-                    Color.fromARGB(255, 81, 16, 16),
-                  ],
+                  colors: [Color(0xFF511010), Color(0xFF511010)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -90,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
           // Login Form
           SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20). copyWith(top: 100),
+            padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(top: 100),
             child: Center(
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 400),
@@ -121,7 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                     const Text(
                       'Silahkan Login Terlebih Dahulu!',
                       style: TextStyle(
-                          fontSize: 16, color: Color.fromARGB(255, 255, 255, 255)),
+                          fontSize: 16, color: Colors.black54),
                     ),
                     const SizedBox(height: 30),
                     // Username TextField
@@ -136,7 +145,6 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none,
                         ),
-                        errorText: _usernameError.isEmpty ? null : _usernameError,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -158,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                             _isPasswordVisible
                                 ? Icons.visibility
                                 : Icons.visibility_off,
-                            color: const Color.fromARGB(255, 202, 164, 164),
+                            color: Colors.grey,
                           ),
                           onPressed: () {
                             setState(() {
@@ -166,9 +174,9 @@ class _LoginPageState extends State<LoginPage> {
                             });
                           },
                         ),
-                        errorText: _passwordError.isEmpty ? null : _passwordError,
                       ),
                     ),
+
                     const SizedBox(height: 20),
                     // Login Button
                     SizedBox(
@@ -186,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
                                 'Login',
-                                style: TextStyle(fontSize: 18, color: Color.fromARGB(255, 0, 0, 0)),
+                                style: TextStyle(fontSize: 18, color: Colors.black),
                               ),
                       ),
                     ),

@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class UserPage extends StatefulWidget {
   final String title;
 
-  const UserPage ({Key? key, required this.title}) : super(key: key);
+  const UserPage(String s, {Key? key, required this.title}) : super(key: key);
 
   @override
   _UserPageState createState() => _UserPageState();
@@ -14,83 +14,94 @@ class _UserPageState extends State<UserPage> {
   final SupabaseClient supabase = Supabase.instance.client;
   List<dynamic> userList = [];
 
- @override
-void initState() {
-  super.initState();
-  _fetchUser();
+  @override
+  void initState() {
+    super.initState();
+    _fetchUser();
 
-  // Supabase real-time listener
-  supabase.from('user').stream(primaryKey: ['id']).listen((data) {
-    print("Real-time update: $data");
-    if (mounted) {
-     _fetchUser();
-    }
-  });
-}
+    // Supabase real-time listener
+   supabase.from('user').stream(primaryKey: ['id']).listen((data) {
+  print("Real-time update: $data");
+  if (mounted) {
+    _fetchUser(); // Update user list on real-time change
+  }
+});
 
-// Fungsi untuk mengambil data user dari Supabase
-Future<void> _fetchUser() async {
+  }
+
+  // Fungsi untuk mengambil data user dari Supabase
+  Future<void> _fetchUser() async {
   try {
     print("Fetching user...");
     final response = await supabase.from('user').select();
-    print("Data user dari Supabase: $response");
 
-    setState(() {
-      userList = response;
-    });
+    if (response != null) {
+      print("Data user dari Supabase: $response");
+
+      setState(() {
+        userList = response;
+      });
+    } else {
+      print("No data found");
+    }
   } catch (e) {
     print("Error mengambil data user: $e");
   }
 }
 
-// Fungsi untuk menambah user ke database
-Future<void> _tambahUser(String username, String password) async {
+
+  // Fungsi untuk menambah user ke database
+  Future<void> _tambahUser(String username, String password) async {
   try {
     final response = await supabase.from('user').insert({
       'username': username,
       'password': password,
     }).select();
 
-    print("User ditambahkan: $response");
+    print("Data setelah ditambahkan: $response");
+    print("User List setelah fetch: $userList");
 
-    setState(() {
-      userList = response;
-    });
-    print("User list after update: $userList");
 
+    // Pastikan data sudah selesai ditambahkan sebelum memanggil _fetchUser()
+    if (response != null && response.isNotEmpty) {
+      _fetchUser(); // Call _fetchUser to refresh data
+    } else {
+      print("Error: Data not added");
+    }
   } catch (e) {
     print("Error menambahkan user: $e");
   }
 }
 
-// Fungsi untuk mengedit user
-Future<void> _editUser(int id, String username, String password) async {
-  try {
-    await supabase.from('user').update({
-      'username': username,
-      'password': password,
-    }).match({'id': id});
+  // Fungsi untuk mengedit user
+  Future<void> _editUser(int id, String username, String password) async {
+    try {
+      await supabase.from('user').update({
+        'username': username,
+        'password': password,
+      }).match({'id': id}).select(); // Tanpa execute
 
-    _fetchUser();  // Refresh the user list after editing
-  } catch (e) {
-    print("Error mengedit user: $e");
+      _fetchUser(); // Refresh the user list after editing
+    } catch (e) {
+      print("Error mengedit user: $e");
+    }
   }
-}
 
-// Fungsi untuk menghapus user
-Future<void> _hapusUser(int id) async {
-  try {
-    await supabase.from('user').delete().match({'id': id});
-    _fetchUser();  // Refresh the user list after deletion
-  } catch (e) {
-    print("Error menghapus user: $e");
+  // Fungsi untuk menghapus user
+  Future<void> _hapusUser(int id) async {
+    try {
+      await supabase.from('user').delete().match({'id': id}).select(); // Tanpa execute
+      _fetchUser(); // Refresh the user list after deletion
+    } catch (e) {
+      print("Error menghapus user: $e");
+    }
   }
-}
 
   // Dialog untuk menambah user
   void _showDialogTambah() {
     String username = "";
     String password = "";
+  
 
     showDialog(
       context: context,
@@ -115,7 +126,7 @@ Future<void> _hapusUser(int id) async {
           TextButton(
             onPressed: () {
               if (username.isNotEmpty && password.isNotEmpty) {
-               _tambahUser(username, password);
+                _tambahUser(username, password); // Call _tambahUser here
                 Navigator.pop(context);
               }
             },
