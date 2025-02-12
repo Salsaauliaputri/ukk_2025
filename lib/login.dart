@@ -12,7 +12,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
- 
+
   final SupabaseClient _supabaseClient = Supabase.instance.client;
 
   bool _isLoading = false;
@@ -34,8 +34,24 @@ class _LoginPageState extends State<LoginPage> {
       _errorShown = false; // Reset error setiap kali login ditekan
     });
 
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnackBar('Username dan Password tidak boleh kosong');
+    String username = _usernameController.text.trim();
+    String password = _passwordController.text.trim();
+
+    // Cek jika username dan password kosong
+    if (username.isEmpty && password.isEmpty) {
+      _showSnackBar('Username dan password tidak boleh kosong');
+      return;
+    }
+    
+    // Cek jika username kosong
+    if (username.isEmpty) {
+      _showSnackBar('Username tidak boleh kosong');
+      return;
+    }
+    
+    // Cek jika password kosong
+    if (password.isEmpty) {
+      _showSnackBar('Password tidak boleh kosong');
       return;
     }
 
@@ -44,35 +60,38 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      // Cek apakah username ada di database
+      final userCheck = await _supabaseClient
+          .from('user')
+          .select()
+          .eq('username', username)
+          .maybeSingle();
+
+      if (userCheck == null) {
+        _showSnackBar('Username Salah');
+        return;
+      }
+
+      // Cek apakah password cocok dengan username yang ditemukan
       final response = await _supabaseClient
           .from('user')
           .select()
-          .eq('username', _usernameController.text.trim())
-          .eq('password', _passwordController.text.trim())
-          .single();
+          .eq('username', username)
+          .eq('password', password)
+          .maybeSingle();
 
-      if (response != null && response.isNotEmpty) {
-        _errorShown = false; // Reset jika login berhasil
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const HomePage("home", title: "Home")),
-        );
-      } else {
-        if (!_errorShown) {
-          _showSnackBar('Username atau Password Salah');
-          setState(() {
-            _errorShown = true;
-          });
-        }
+      if (response == null) {
+        _showSnackBar('Password Salah');
+        return;
       }
+
+      // Jika login sukses, pindah ke halaman Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage("home", title: "Home")),
+      );
     } catch (e) {
-      if (!_errorShown) {
-        _showSnackBar('Username atau Password Salah');
-        setState(() {
-          _errorShown = true;
-        });
-      }
+      _showSnackBar('Terjadi kesalahan. Coba lagi.');
     } finally {
       setState(() {
         _isLoading = false;
@@ -129,8 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 10),
                     const Text(
                       'Silahkan Login Terlebih Dahulu!',
-                      style: TextStyle(
-                          fontSize: 16, color: Colors.black54),
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                     const SizedBox(height: 30),
                     // Username TextField
@@ -163,9 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
+                            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -176,7 +192,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
                     // Login Button
                     SizedBox(

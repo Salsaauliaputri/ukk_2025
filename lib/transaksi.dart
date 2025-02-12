@@ -48,12 +48,24 @@ class _TransaksiPageState extends State<TransaksiPage> {
     }
   }
 
-  void _addToCart(Map<String, dynamic> product) {
-    setState(() {
+ void _addToCart(Map<String, dynamic> product) {
+  setState(() {
+    // Cek apakah produk sudah ada di keranjang
+    final index =
+        _cart.indexWhere((item) => item['produk_id'] == product['produk_id']);
+    
+    if (index != -1) {
+      // Jika produk sudah ada, tambahkan jumlahnya
+      _cart[index]['quantity'] += 1;
+    } else {
+      // Jika belum ada, tambahkan produk ke keranjang
       _cart.add({...product, 'quantity': 1});
-      _calculateTotal();
-    });
-  }
+    }
+    
+    _calculateTotal();
+  });
+}
+
 
   void _updateCart(Map<String, dynamic> product, int quantity) {
     setState(() {
@@ -83,42 +95,50 @@ class _TransaksiPageState extends State<TransaksiPage> {
     });
   }
 
-  Future<void> _checkout() async {
-    if (_cart.isEmpty) return;
+ Future<void> _checkout() async {
+  if (_cart.isEmpty) return;
 
-    try {
-      final response = await _supabase.from('penjualan').insert({
-        'tanggal_penjualan': DateTime.now().toIso8601String(),
-        'total_harga': _totalPrice,
-        'pelanggan_id': _selectedCustomer == 'pelanggan biasa'
-            ? null
-            : int.parse(_selectedCustomer!),
-      }).select();
-      final penjualanId = response[0]['penjualan_id'];
+  try {
+    final response = await _supabase.from('penjualan').insert({
+      'tanggal_penjualan': DateTime.now().toIso8601String(),
+      'total_harga': _totalPrice,
+      'pelanggan_id': _selectedCustomer == 'pelanggan biasa'
+          ? null
+          : int.parse(_selectedCustomer!),
+    }).select();
+    final penjualanId = response[0]['penjualan_id'];
 
-      for (final item in _cart) {
-        await _supabase.from('detail_penjualan').insert({
-          'penjualan_id': penjualanId,
-          'produk_id': item['produk_id'],
-          'jumlah_produk': item['quantity'],
-          'subtotal': item['harga'] * item['quantity'],
-        });
-      }
-
-      setState(() {
-        _cart.clear();
-        _selectedCustomer = null;
-        _totalPrice = 0;
+    for (final item in _cart) {
+      await _supabase.from('detail_penjualan').insert({
+        'penjualan_id': penjualanId,
+        'produk_id': item['produk_id'],
+        'jumlah_produk': item['quantity'],
+        'subtotal': item['harga'] * item['quantity'],
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaksi berhasil!')));
-    } catch (error) {
-      debugPrint('Error during checkout: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Terjadi kesalahan saat transaksi.')));
     }
+
+    setState(() {
+      _cart.clear();
+      _selectedCustomer = null;
+      _totalPrice = 0;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaksi berhasil!')));
+
+    // 🚀 Pindah ke halaman Riwayat Transaksi setelah transaksi berhasil
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RiwayatPage()),
+    );
+
+  } catch (error) {
+    debugPrint('Error during checkout: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan saat transaksi.')));
   }
+}
+
 
   Widget _buildProductList() {
     return ListView.builder(
@@ -210,6 +230,29 @@ class _TransaksiPageState extends State<TransaksiPage> {
               style: TextStyle(fontSize: 18, color: Colors.white)),
         ),
       ),
+      Padding(
+  padding: const EdgeInsets.only(bottom: 16.0),
+  child: ElevatedButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RiwayatPage()),
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.blueGrey, // Warna tombol
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+    ),
+    child: const Text(
+      'Lihat Riwayat Transaksi',
+      style: TextStyle(fontSize: 18, color: Colors.white),
+    ),
+  ),
+),
+
     ],
   );
 }

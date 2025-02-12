@@ -1,30 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login.dart'; // pastikan ini diimport dengan benar
-import 'home.dart'; // Pastikan Anda sudah import HomePage
+import 'transaksi.dart';
 
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Aplikasi',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 181, 141, 141)),
-        useMaterial3: true,
-      ),
-      home: LoginPage("login", title: 'Login'), // Pastikan LoginPage ditampilkan pertama kali
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-// Halaman Produk (Contoh)
 class ProdukPage extends StatefulWidget {
   final String title;
-  const ProdukPage(String s, {super.key, required this.title}); // Menggunakan required untuk title
+  const ProdukPage(String s, {super.key, required this.title});
 
   @override
   _ProdukPageState createState() => _ProdukPageState();
@@ -33,6 +13,9 @@ class ProdukPage extends StatefulWidget {
 class _ProdukPageState extends State<ProdukPage> {
   final SupabaseClient supabase = Supabase.instance.client;
   List<dynamic> produkList = [];
+  // Variabel untuk menampung hasil filter produk
+  List<dynamic> filteredProdukList = [];
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
@@ -42,14 +25,16 @@ class _ProdukPageState extends State<ProdukPage> {
     // Supabase real-time listener
     supabase.from('produk').stream(primaryKey: ['produk_id']).listen((data) {
       print("Real-time update: $data");
-      if (mounted) {
+      if (mounted && data.isNotEmpty) {
         setState(() {
           produkList = data;
+          // Update filteredProdukList agar selalu sinkron dengan produkList
+          filteredProdukList = data;
         });
       }
     });
   }
-
+  
   // Fungsi untuk mengambil data produk dari Supabase
   Future<void> _fetchProduk() async {
     try {
@@ -59,11 +44,10 @@ class _ProdukPageState extends State<ProdukPage> {
       if (response != null) {
         // Hapus duplikat dengan `toSet().toList()`
         final uniqueProduk = response.toSet().toList();
-
         print("Data produk dari Supabase: $uniqueProduk");
-
         setState(() {
           produkList = uniqueProduk;
+          filteredProdukList = uniqueProduk;
         });
       }
     } catch (e) {
@@ -83,10 +67,8 @@ class _ProdukPageState extends State<ProdukPage> {
 
       if (existingProduk != null) {
         // Tampilkan pesan bahwa produk sudah terdaftar
-        _showAlert("Produk sudah terdaftar", "Produk dengan nama,harga dan stok '$nama,$harga,$stok' sudah ada dalam daftar.");
-
+        _showAlert("Produk sudah terdaftar", "Produk dengan nama, harga, dan stok '$nama,$harga,$stok' sudah ada dalam daftar.");
         print("Produk sudah ada, stok tidak diperbarui di UI!");
-
         // Hanya perbarui tampilan UI tanpa menambahkan produk duplikat
         _fetchProduk();
         return;
@@ -104,6 +86,7 @@ class _ProdukPageState extends State<ProdukPage> {
       if (response.isNotEmpty) {
         setState(() {
           produkList.add(response.first);
+          filteredProdukList = produkList;
         });
       }
     } catch (e) {
@@ -119,7 +102,7 @@ class _ProdukPageState extends State<ProdukPage> {
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context), // Menutup dialog
             child: const Text('OK'),
           ),
         ],
@@ -267,43 +250,73 @@ class _ProdukPageState extends State<ProdukPage> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: ListView.builder(
-      itemCount: produkList.length,
-      itemBuilder: (context, index) {
-        final produk = produkList[index];
-        return Card(
-          child: ListTile(
-            title: Text(produk['nama_produk']),
-            subtitle: Text("Rp ${produk['harga']} - Stok: ${produk['stok']}"),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _showDialogEdit(
-                    produk['produk_id'],
-                    produk['nama_produk'],
-                    produk['harga'].toDouble(),
-                    produk['stok'],
-                  ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          // Bagian pencarian
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                labelText: 'Cari Produk',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _showDialogHapus(produk['produk_id']),
-                ),
-              ],
+              ),
+              onChanged: (query) {
+                setState(() {
+                  filteredProdukList = produkList.where((produk) {
+                    return produk['nama_produk']
+                        .toString()
+                        .toLowerCase()
+                        .contains(query.toLowerCase());
+                  }).toList();
+                });
+              },
             ),
           ),
-        );
-      },
-    ),
-    floatingActionButton: FloatingActionButton(
-      backgroundColor: Colors.red,
-      onPressed: _showDialogTambah,
-      child: const Icon(Icons.add),
-    ),
-  );
-}
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredProdukList.length,
+              itemBuilder: (context, index) {
+                final produk = filteredProdukList[index];
+                return Card(
+                  child: ListTile(
+                    title: Text(produk['nama_produk']),
+                    subtitle: Text("Rp ${produk['harga']} - Stok: ${produk['stok']}"),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _showDialogEdit(
+                            produk['produk_id'],
+                            produk['nama_produk'],
+                            produk['harga'].toDouble(),
+                            produk['stok'],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _showDialogHapus(produk['produk_id']),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.red,
+        onPressed: _showDialogTambah,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
 }

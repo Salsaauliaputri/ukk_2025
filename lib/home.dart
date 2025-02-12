@@ -83,12 +83,11 @@ class _HomePageState extends State<HomePage> {
         onTap: _onItemTapped,
         backgroundColor: const Color.fromARGB(255, 173, 134, 134),
         selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.red.shade200,
+        unselectedItemColor: const Color.fromARGB(255, 100, 28, 28),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Produk'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Pelanggan'),
           BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Transaksi'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Riwayat'),
         ],
       ),
     );
